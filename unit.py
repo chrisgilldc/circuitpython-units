@@ -13,8 +13,6 @@ import unit_conversions
 class Unit:
     def __init__(self, first, second=None):
 
-        print("First: {}".format(first))
-        print("Second: {}".format(second))
         # Check inputs and determine mode.
         # If only one parameter is passed and it's a string, send it to string parsing.
         if isinstance(first,str) and second is None:
@@ -28,14 +26,11 @@ class Unit:
                 raise ValueError("Unit is required when creating a Unit through parameters")
             # Get conversion table for this unit
 
-            # Scan to make sure this is a supported unit
-            for unit_class in unit_conversions.CLASSES:
-                if second not in self.CONVERSION_LOOKUP:
-                    raise ValueError("Provided unit {} is not supported.".format(second))
+            try:
+                self.unit = second
+            except:
+                raise
 
-            # Set the unit first
-            self.unit = second
-            # Value will get converted
             self.value = first
 
     @property
@@ -52,10 +47,14 @@ class Unit:
 
         :param unit: The level of the message
         """
-        if unit not in self.CONVERSION_LOOKUP:
-            raise ValueError("Unit {} is not supported.".format(unit))
-        else:
-            self._unit = unit
+        found = False
+        for unit_class in unit_conversions.CLASSES:
+            if unit in unit_class:
+                found = True
+                break
+        if not found:
+            raise ValueError("Provided unit {} is not supported.".format(unit))
+        self._unit = unit
 
     # When value is set, convert it.
     @value.setter
@@ -212,16 +211,17 @@ class Unit:
         elements = unit_string.split()
         if len(elements) == 2:
             # If there's two elements, it should be "<value> <unit>"
-            try:
-                self.unit = elements[1]
-            except:
-                raise ValueError("String '{}' does not contain recognized units.".format(unit_strings))
-            else:
-                try:
-                    # Cast the first element to int or float
-                    self.value = self._str_to_numeric(elements[0])
-                except:
-                    raise
+            #try:
+            self.unit = elements[1]
+            print(self.unit)
+            # except:
+            #     raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".format(unit_string,elements[1]))
+            # else:
+            #     try:
+            #         # Cast the first element to int or float
+            #         self.value = self._str_to_numeric(elements[0])
+            #     except:
+            #         raise
         # Four elements means 'X ft Y in'.
         elif len(elements) == 4:
             pass

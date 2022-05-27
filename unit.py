@@ -51,6 +51,7 @@ class Unit:
         for unit_class in unit_conversions.CLASSES:
             if unit in unit_class:
                 found = True
+                self.unit_class = unit_class
                 break
         if not found:
             raise ValueError("Provided unit {} is not supported.".format(unit))
@@ -79,7 +80,7 @@ class Unit:
         :param input_unit: The target unit to find. Must be in the same class (can't convert Hours to Miles!)
         :return: float
         """
-        unit_class = getattr(self, self.CONVERSION_LOOKUP[input_unit])
+        unit_class = getattr(self, self.unit_class[input_unit])
         if self._unit == unit_class['base_unit']:
             return 1
         else:
@@ -87,7 +88,7 @@ class Unit:
 
     def convert(self, output_unit):
         # Check for issues.
-        if output_unit not in self.CONVERSION_LOOKUP:
+        if output_unit not in self.unit_class:
             raise ValueError("Requested output unit '{}' is not supported.".format(output_unit))
 
         # Step one, convert our units into the base unit.
@@ -122,20 +123,10 @@ class Unit:
         else:
             return Unit(val_feet, 'ft'), Unit(val_inches, 'in')
 
-    def get_base_unit(self):
-        """
-        Get the base storage unit for this class of units. ie: centimeters for distances.
-        :return:
-        """
-        type_dict = getattr(self, self.CONVERSION_LOOKUP[self._unit])
-        return type_dict['base_unit']
-
     def __comparator(self, other_input, operator):
         # Check for valid inputs.
         if not isinstance(other_input, Unit):
             raise TypeError("Can only compare Units to other Units.")
-        elif self.get_base_unit() is not other_input.get_base_unit():
-            raise TypeError("Units are not the same class.")
 
         # Convert if need be.
         if self._unit != other_input._unit:
@@ -211,20 +202,20 @@ class Unit:
         elements = unit_string.split()
         if len(elements) == 2:
             # If there's two elements, it should be "<value> <unit>"
-            #try:
-            self.unit = elements[1]
-            print(self.unit)
-            # except:
-            #     raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".format(unit_string,elements[1]))
-            # else:
-            #     try:
-            #         # Cast the first element to int or float
-            #         self.value = self._str_to_numeric(elements[0])
-            #     except:
-            #         raise
+            try:
+                self.unit = elements[1]
+            except:
+                raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".format(unit_string,elements[1]))
+            else:
+                try:
+                    # Cast the first element to int or float
+                    self.value = self._str_to_numeric(elements[0])
+                except:
+                    raise
         # Four elements means 'X ft Y in'.
-        elif len(elements) == 4:
-            pass
+        # To be implemented later.
+        # elif len(elements) == 4:
+        #     pass
         else:
             raise ValueError("Incorrect number of elements, could not interpret.")
 

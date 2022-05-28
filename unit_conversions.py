@@ -29,4 +29,4 @@ TIME = {
 }
 
 # enumerate the classes, so they can be iterated.
-CLASSES = [DISTANCE, SPEED, TIME]
+CLASSES = ['DISTANCE', 'SPEED', 'TIME']

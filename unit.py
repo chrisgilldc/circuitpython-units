@@ -10,17 +10,18 @@ from math import floor
 # Import the constants.
 import unit_conversions
 
+
 class Unit:
     def __init__(self, first, second=None):
 
         # Check inputs and determine mode.
         # If only one parameter is passed and it's a string, send it to string parsing.
-        if isinstance(first,str) and second is None:
+        if isinstance(first, str) and second is None:
             self._unit_string_parse(first)
         else:
             if first is None:
                 raise ValueError("Value is required when creating a Unit")
-            if type(first) not in (int,float):
+            if type(first) not in (int, float):
                 raise TypeError("Value type must be float or int")
             if second is None:
                 raise ValueError("Unit is required when creating a Unit through parameters")
@@ -41,6 +42,9 @@ class Unit:
     def value(self):
         return self._value
 
+    def unit_class(self):
+        return self._unit_class
+
     @unit.setter
     def unit(self, unit):
         """Set the unit of the object. Does *not* convert values.
@@ -49,9 +53,9 @@ class Unit:
         """
         found = False
         for unit_class in unit_conversions.CLASSES:
-            if unit in unit_class:
+            if unit in getattr(unit_conversions,unit_class):
                 found = True
-                self.unit_class = unit_class
+                self._unit_class = unit_class
                 break
         if not found:
             raise ValueError("Provided unit {} is not supported.".format(unit))
@@ -72,43 +76,21 @@ class Unit:
             raise TypeError("Unit value must be int or float, got {} input".format(type(value)))
         self._value = value
 
-    # Finds the conversion factor to/from the unit.
-    def _get_conversion_factor(self, input_unit):
-        """
-        Finds the correct conversion factor to use for the particular unit requested.
-
-        :param input_unit: The target unit to find. Must be in the same class (can't convert Hours to Miles!)
-        :return: float
-        """
-        unit_class = getattr(self, self.unit_class[input_unit])
-        if self._unit == unit_class['base_unit']:
-            return 1
-        else:
-            return unit_class[input_unit]
-
     def convert(self, output_unit):
         # Check for issues.
-        if output_unit not in self.unit_class:
+        if output_unit not in getattr(unit_conversions, self._unit_class):
             raise ValueError("Requested output unit '{}' is not supported.".format(output_unit))
 
-        # Step one, convert our units into the base unit.
-        self_to_base = self._get_conversion_factor(self.unit)
-        self_in_base = self.value * self_to_base
+        try:
+            conversion_factor = getattr(unit_conversions, self._unit_class)[self._unit][output_unit]
+        except:
+            raise ValueError("No conversion path from {} to {}".format(self._unit, output_unit))
 
-        # if the desired unit *is* the based unit, go ahead and return.
-        if output_unit == self.get_base_unit():
-            return self_in_base
+        self_in_target = self.value * conversion_factor
 
-        # Okay, continue with stage two, convert from base unit to target unit.
-        base_to_target = self._get_conversion_factor(output_unit)
-        self_in_target = self_in_base / base_to_target
-
-        # Since this is a 'convert' output, to go *from* the base unit to the output unit, we divide.
-        # Return a new Unit object with the new value and unit.
         return Unit(self_in_target, output_unit)
 
-    def __str__(self):
-        return "{} {}".format(self.value, self.unit)
+
 
     def _ft_in_normalize(self, value):
         pass
@@ -123,38 +105,47 @@ class Unit:
         else:
             return Unit(val_feet, 'ft'), Unit(val_inches, 'in')
 
+    def __repr__(self):
+        return "Unit({},{}".format(self._value,self._unit)
+
+    def __str__(self):
+        return "{} {}".format(self.value, self.unit)
+
+    def __reduce__(self):
+        return (Unit,self._value, self._unit)
+
     def __comparator(self, other_input, operator):
         # Check for valid inputs.
         if not isinstance(other_input, Unit):
             raise TypeError("Can only compare Units to other Units.")
 
         # Convert if need be.
-        if self._unit != other_input._unit:
-            print("Self unit: {}\tOther unit: {}".format(self._unit,other_input._unit))
+        if self.unit != other_input.unit:
+            print("Self unit: {}\tOther unit: {}".format(self.unit, other_input.unit))
             other = other_input.convert(self._unit)
-            print("Unit converted: {} {}".format(other._value,other._unit))
+            print("Unit converted: {} {}".format(other.value, other.unit))
         else:
             other = other_input
 
         # Do the requested operation
         if operator == 'lt':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value < other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value < other.value
         elif operator == 'le':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value <= other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value <= other.value
         elif operator == 'gt':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value > other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value > other.value
         elif operator == 'ge':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value >= other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value >= other.value
         elif operator == 'eq':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value == other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value == other.value
         elif operator == 'ne':
-            print("Comparing {} to {}".format(self._value,other._value))
-            return self._value != other._value
+            print("Comparing {} to {}".format(self.value, other.value))
+            return self.value != other.value
         else:
             raise ValueError("Not a valid operator")
 
@@ -179,19 +170,19 @@ class Unit:
     def _arithmatic(self, other, operator):
         if not isinstance(other, Unit):
             raise TypeError("Can only compare Units to other Units.")
-        elif self.get_base_unit() is not other.get_base_unit():
+        elif self._unit_class is not other._unit_class:
             raise TypeError("Units are not the same class.")
 
         if self._unit != other._unit:
             other = other.convert(self._unit)
 
         if operator == 'add':
-            return Unit(self._value + other._value,self.unit)
+            return Unit(self._value + other._value, self.unit)
         elif operator == 'sub':
             return Unit(self._value - self._value, self._unit)
 
     def __add__(self, other):
-        return self._arithmatic(other,'add')
+        return self._arithmatic(other, 'add')
 
     def __sub__(self, other):
         return self._arithmatic(other, 'sub')
@@ -202,16 +193,17 @@ class Unit:
         elements = unit_string.split()
         if len(elements) == 2:
             # If there's two elements, it should be "<value> <unit>"
-            try:
-                self.unit = elements[1]
-            except:
-                raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".format(unit_string,elements[1]))
-            else:
-                try:
-                    # Cast the first element to int or float
-                    self.value = self._str_to_numeric(elements[0])
-                except:
-                    raise
+            # try:
+            self.unit = elements[1]
+            # except:
+            #     raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".
+            #                      format(unit_string, elements[1]))
+            # else:
+            #     try:
+            #         # Cast the first element to int or float
+            #         self.value = self._str_to_numeric(elements[0])
+            #     except:
+            #         raise
         # Four elements means 'X ft Y in'.
         # To be implemented later.
         # elif len(elements) == 4:
@@ -219,8 +211,8 @@ class Unit:
         else:
             raise ValueError("Incorrect number of elements, could not interpret.")
 
-    def _str_to_numeric(self,value_string):
-        if not isinstance(value_string,str):
+    def _str_to_numeric(self, value_string):
+        if not isinstance(value_string, str):
             raise TypeError("Can only convert strings, not {}".format(type(value_string)))
         try:
             return self._int_or_float(value_string)
@@ -228,9 +220,9 @@ class Unit:
             raise ValueError("Could not convert {} to numeric (int or float)".format(value_string))
 
     # Simple helper to keep from returning floats where not required.
-    def _int_or_float(self,x):
+    def _int_or_float(self, x):
         if float(x) % 1 == 0:
             val = int(x)
         else:
-            val =  float(x)
+            val = float(x)
         return val

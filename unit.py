@@ -32,7 +32,7 @@ class Unit:
             except:
                 raise
 
-            self.value = first
+            self._value = first
 
     @property
     def unit(self):
@@ -64,11 +64,9 @@ class Unit:
     # When value is set, convert it.
     @value.setter
     def value(self, value):
-        """Set the scalar value of the unit. Will be converted to the base unit type for the unit class.
-        IE: all distances are stored in cm internally.
-        Most units require int or float types. Foot-inches must be a dict.
+        """Set the scalar value of the unit.
 
-        :param value: The level of the message
+        :param value: The scalar value the unit. Must be an integer or float.
         """
         if self._unit is "ft-in" and not isinstance(value, dict):
             raise TypeError("Foot-inches unit type requires dict with 'ft' and 'in' elements.")
@@ -193,17 +191,12 @@ class Unit:
         elements = unit_string.split()
         if len(elements) == 2:
             # If there's two elements, it should be "<value> <unit>"
-            # try:
-            self.unit = elements[1]
-            # except:
-            #     raise ValueError("String '{}' does not contain recognized units (Maybe {}?).".
-            #                      format(unit_string, elements[1]))
-            # else:
-            #     try:
-            #         # Cast the first element to int or float
-            #         self.value = self._str_to_numeric(elements[0])
-            #     except:
-            #         raise
+            try:
+                self.unit = elements[1]
+            except:
+                raise
+            self.value = self._str_to_numeric(elements[0])
+
         # Four elements means 'X ft Y in'.
         # To be implemented later.
         # elif len(elements) == 4:

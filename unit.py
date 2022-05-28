@@ -42,6 +42,7 @@ class Unit:
     def value(self):
         return self._value
 
+    @property
     def unit_class(self):
         return self._unit_class
 
@@ -53,7 +54,7 @@ class Unit:
         """
         found = False
         for unit_class in unit_conversions.CLASSES:
-            if unit in getattr(unit_conversions,unit_class):
+            if unit in getattr(unit_conversions, unit_class):
                 found = True
                 self._unit_class = unit_class
                 break
@@ -88,8 +89,6 @@ class Unit:
 
         return Unit(self_in_target, output_unit)
 
-
-
     def _ft_in_normalize(self, value):
         pass
 
@@ -103,14 +102,53 @@ class Unit:
         else:
             return Unit(val_feet, 'ft'), Unit(val_inches, 'in')
 
+    # Parse a unit string out
+    def _unit_string_parse(self, unit_string):
+        # Try to split on whitespace.
+        elements = unit_string.split()
+        if len(elements) == 2:
+            # If there's two elements, it should be "<value> <unit>"
+            try:
+                self.unit = elements[1]
+            except:
+                raise
+            self.value = self._str_to_numeric(elements[0])
+
+        # Four elements means 'X ft Y in'.
+        # To be implemented later.
+        # elif len(elements) == 4:
+        #     pass
+        else:
+            raise ValueError("Incorrect number of elements, could not interpret.")
+
+    def _str_to_numeric(self, value_string):
+        if not isinstance(value_string, str):
+            raise TypeError("Can only convert strings, not {}".format(type(value_string)))
+        try:
+            return self._int_or_float(value_string)
+        except:
+            raise ValueError("Could not convert {} to numeric (int or float)".format(value_string))
+
+    # Simple helper to keep from returning floats where not required.
+    @staticmethod
+    def _int_or_float(x):
+        if float(x) % 1 == 0:
+            val = int(x)
+        else:
+            val = float(x)
+        return val
+
+    # Output methods
     def __repr__(self):
-        return "Unit({},{}".format(self._value,self._unit)
+        return "Unit({},{}".format(self._value, self._unit)
 
     def __str__(self):
         return "{} {}".format(self.value, self.unit)
 
     def __reduce__(self):
-        return (Unit,self._value, self._unit)
+        return (Unit, self._value, self._unit)
+
+    # Comparison operations
 
     def __comparator(self, other_input, operator):
         # Check for valid inputs.
@@ -165,10 +203,11 @@ class Unit:
     def __ne__(self, other):
         return self.__comparator(other, 'ne')
 
-    def _arithmatic(self, other, operator):
+    # Mathematical operators
+    def _arithmetic(self, other, operator):
         if not isinstance(other, Unit):
             raise TypeError("Can only compare Units to other Units.")
-        elif self._unit_class is not other._unit_class:
+        elif self.unit_class is not other.unit_class:
             raise TypeError("Units are not the same class.")
 
         if self._unit != other._unit:
@@ -177,45 +216,26 @@ class Unit:
         if operator == 'add':
             return Unit(self._value + other._value, self.unit)
         elif operator == 'sub':
-            return Unit(self._value - self._value, self._unit)
+            return Unit(self._value - self._value, self.unit)
+        elif operator == 'truediv':
+            # This will return a float, ie, a percentage
+            return self._int_or_float(self._value / other._value)
 
     def __add__(self, other):
-        return self._arithmatic(other, 'add')
+        return self._arithmetic(other, 'add')
 
     def __sub__(self, other):
-        return self._arithmatic(other, 'sub')
+        return self._arithmetic(other, 'sub')
 
-    # Parse a unit string out
-    def _unit_string_parse(self, unit_string):
-        # Try to split on whitespace.
-        elements = unit_string.split()
-        if len(elements) == 2:
-            # If there's two elements, it should be "<value> <unit>"
-            try:
-                self.unit = elements[1]
-            except:
-                raise
-            self.value = self._str_to_numeric(elements[0])
+    def __truediv__(self, other):
+        return self._arithmetic(other, 'truediv')
 
-        # Four elements means 'X ft Y in'.
-        # To be implemented later.
-        # elif len(elements) == 4:
-        #     pass
-        else:
-            raise ValueError("Incorrect number of elements, could not interpret.")
 
-    def _str_to_numeric(self, value_string):
-        if not isinstance(value_string, str):
-            raise TypeError("Can only convert strings, not {}".format(type(value_string)))
-        try:
-            return self._int_or_float(value_string)
-        except:
-            raise ValueError("Could not convert {} to numeric (int or float)".format(value_string))
+# This is a dummy class so there can be a type to return when something isn't a number.
+class NaN:
+    def __init__(self, reason=None):
+        self._reason = reason
 
-    # Simple helper to keep from returning floats where not required.
-    def _int_or_float(self, x):
-        if float(x) % 1 == 0:
-            val = int(x)
-        else:
-            val = float(x)
-        return val
+    @property
+    def reason(self):
+        return self._reason

@@ -37,8 +37,7 @@ Operations may be performed between two Unit objects *only*.
 * Operations
   * Addition
   * Subtraction
-
-Multiplying and dividing units is not currently supported.
+  * Division
 
 ## Using Units
 
@@ -55,3 +54,9 @@ Alternately, the library will try to interpret a string.
 
 
 ````
+
+## Methods
+
+* convert - Convert to a new unit and return a new Unit object
+* convert_Inplace - Change this unit to a new unit and convert the value. This will NOT return a new object.
+* asftin - Returns a string for Distance class objects with the feet and inches. Does not convert or change anything internally, intended to be used for display output.  

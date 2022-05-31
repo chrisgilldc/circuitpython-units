@@ -177,38 +177,28 @@ class Unit:
         # Check for valid inputs.
         if type(other_input) not in (Unit, int, float):
             raise TypeError("Can only compare Units to other Units, integers or floats.")
-        print("Comparing self Unit to {}".format(type(other_input)))
 
         # Convert if need be.
         if isinstance(other_input,Unit):
             if self.unit != other_input.unit:
-                print("Self unit: {}\tOther unit: {}".format(self.unit, other_input.unit))
                 other = other_input.convert(self._unit).value
-                print("Unit converted: {}".format(other))
             else:
-                print("Conversion not needed: {} vs {}".format(self.unit,other_input.unit))
                 other = other_input.value
         else:
                 other = other_input
 
         # Do the requested operation
         if operator == 'lt':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value < other
         elif operator == 'le':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value <= other
         elif operator == 'gt':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value > other
         elif operator == 'ge':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value >= other
         elif operator == 'eq':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value == other
         elif operator == 'ne':
-            print("Comparing {} to {}".format(self.value, other))
             return self.value != other
         else:
             raise ValueError("Not a valid operator")

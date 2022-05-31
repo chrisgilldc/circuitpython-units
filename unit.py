@@ -69,12 +69,11 @@ class Unit:
 
         :param value: The scalar value the unit. Must be an integer or float.
         """
-        if self._unit is "ft-in" and not isinstance(value, dict):
-            raise TypeError("Foot-inches unit type requires dict with 'ft' and 'in' elements.")
         if not isinstance(value, (int, float)):
             raise TypeError("Unit value must be int or float, got {} input".format(type(value)))
         self._value = value
 
+    # Method to convert and return a *new* Unit value.
     def convert(self, output_unit):
         # Check for issues.
         if output_unit not in getattr(unit_conversions, self._unit_class):
@@ -85,22 +84,47 @@ class Unit:
         except:
             raise ValueError("No conversion path from {} to {}".format(self._unit, output_unit))
 
-        self_in_target = self.value * conversion_factor
-
+        self_in_target = self.value / conversion_factor
         return Unit(self_in_target, output_unit)
 
-    def _ft_in_normalize(self, value):
-        pass
+    # Method to convert and make the new values this object's *new* values.
+    def convert_inplace(self,output_unit):
+        try:
+            new_obj = self.convert(output_unit)
+        except:
+            raise
+        # If successful, merge in the unit.
+        self._unit = new_obj._unit
+        self._value = new_obj._value
 
-    def _ft_in_old(self):
-        # Special handling for feet-inches.
-        (val_inches, unit) = self.convert('in')
-        val_feet = floor(val_inches / 12)
-        val_inches = val_inches % 12
-        if val_inches == 0:
-            return Unit(val_feet, 'ft'), None
+    def asftin(self,format='iso',include_zero=True):
+        # If no format provided, return 'ISO' format, ie: 'X ft Y in'
+        if format not in ('iso','prime'):
+            format = 'iso'
+        # This must be a distance class.
+        if self._unit_class != "DISTANCE":
+            raise TypeError("Cannot return feet and inches for non-distance unit!")
+        # If not inches, convert to inches.
+        if self.unit != "in":
+            working_value = self.convert("in").value
         else:
-            return Unit(val_feet, 'ft'), Unit(val_inches, 'in')
+            working_value = self.value
+
+        working_value = self.value
+        # Find out how many feet there are
+        working_value_feet = int(working_value // 12)
+        working_value_inches = floor(working_value % 12)
+
+        # Now we can stringify it.
+        if format == 'prime':
+            ftin_string = str(working_value_feet) + "'"
+            if include_zero:
+                ftin_string = ftin_string + str(working_value_inches) + '"'
+        else:
+            ftin_string = str(working_value_feet) + " ft"
+            if include_zero:
+                ftin_string = ftin_string + " " + str(working_value_inches) + " in"
+        return ftin_string
 
     # Parse a unit string out
     def _unit_string_parse(self, unit_string):
@@ -149,39 +173,43 @@ class Unit:
         return (Unit, self._value, self._unit)
 
     # Comparison operations
-
     def __comparator(self, other_input, operator):
         # Check for valid inputs.
-        if not isinstance(other_input, Unit):
-            raise TypeError("Can only compare Units to other Units.")
+        if type(other_input) not in (Unit, int, float):
+            raise TypeError("Can only compare Units to other Units, integers or floats.")
+        print("Comparing self Unit to {}".format(type(other_input)))
 
         # Convert if need be.
-        if self.unit != other_input.unit:
-            print("Self unit: {}\tOther unit: {}".format(self.unit, other_input.unit))
-            other = other_input.convert(self._unit)
-            print("Unit converted: {} {}".format(other.value, other.unit))
+        if isinstance(other_input,Unit):
+            if self.unit != other_input.unit:
+                print("Self unit: {}\tOther unit: {}".format(self.unit, other_input.unit))
+                other = other_input.convert(self._unit).value
+                print("Unit converted: {}".format(other))
+            else:
+                print("Conversion not needed: {} vs {}".format(self.unit,other_input.unit))
+                other = other_input.value
         else:
-            other = other_input
+                other = other_input
 
         # Do the requested operation
         if operator == 'lt':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value < other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value < other
         elif operator == 'le':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value <= other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value <= other
         elif operator == 'gt':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value > other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value > other
         elif operator == 'ge':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value >= other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value >= other
         elif operator == 'eq':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value == other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value == other
         elif operator == 'ne':
-            print("Comparing {} to {}".format(self.value, other.value))
-            return self.value != other.value
+            print("Comparing {} to {}".format(self.value, other))
+            return self.value != other
         else:
             raise ValueError("Not a valid operator")
 

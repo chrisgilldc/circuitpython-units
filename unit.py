@@ -248,6 +248,8 @@ class Unit:
     def __truediv__(self, other):
         return self._arithmetic(other, 'truediv')
 
+    def __abs__(self):
+        return Unit(abs(self._value), self.unit)
 
 # This is a dummy class so there can be a type to return when something isn't a number.
 class NaN:

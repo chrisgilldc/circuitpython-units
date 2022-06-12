@@ -234,7 +234,7 @@ class Unit:
         if operator == 'add':
             return Unit(self._value + other._value, self.unit)
         elif operator == 'sub':
-            return Unit(self._value - self._value, self.unit)
+            return Unit(self._value - other._value, self.unit)
         elif operator == 'truediv':
             # This will return a float, ie, a percentage
             return self._int_or_float(self._value / other._value)

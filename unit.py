@@ -223,18 +223,32 @@ class Unit:
 
     # Mathematical operators
     def _arithmetic(self, other, operator):
-        if not isinstance(other, Unit):
-            raise TypeError("Can only compare Units to other Units.")
-        elif self.unit_class is not other.unit_class:
-            raise TypeError("Units are not the same class.")
-
-        if self._unit != other._unit:
-            other = other.convert(self._unit)
+        if isinstance(other, Unit):
+            if self.unit_class is not other.unit_class:
+                raise TypeError("Units are not the same class.")
+            elif self._unit != other._unit:
+                other_value = other.convert(self._unit)._value
+            else:
+                other_value = other._value
+        elif isinstance(other,int) or isinstance(other,float):
+            other_value = other
+        elif isinstance(other,str):
+            try:
+                other_value = int(other)
+            except:
+                try:
+                    other_value = float(other)
+                except:
+                    raise TypeError("Other string '{}' could not be cast to int or float.".format(other))
+        else:
+            raise TypeError("Type {} not supported with Unit.".format(type(other)))
 
         if operator == 'add':
-            return Unit(self._value + other._value, self.unit)
+            return Unit(self._value + other_value, self.unit)
         elif operator == 'sub':
-            return Unit(self._value - other._value, self.unit)
+            return Unit(self._value - other_value, self.unit)
+        elif operator == 'mul':
+            return Unit(self._value * other_value, self.unit)
         elif operator == 'truediv':
             # This will return a float, ie, a percentage
             return self._int_or_float(self._value / other._value)
@@ -244,6 +258,11 @@ class Unit:
 
     def __sub__(self, other):
         return self._arithmetic(other, 'sub')
+
+    def __mul__(self,other):
+        if not (isinstance(other,int) or isinstance(other,float)):
+            raise TypeError("Can only multiply unit by a scalar value (int or float)")
+        return self._arithmetic(other, 'mul')
 
     def __truediv__(self, other):
         return self._arithmetic(other, 'truediv')
